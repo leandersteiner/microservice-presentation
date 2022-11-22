@@ -13,9 +13,9 @@ theme: white
 ## Outline
 
 - What are Microservices
-- When to use Microservices
+- Inter-service Communication
 - Modeling Microservices
-- Data Managements
+- Data Management
 - Service Communication
 
 ---
@@ -37,23 +37,20 @@ theme: white
 
 ---
 
-## Microservice vs Monolith
+![](img/microservice-example.svg)
+
+---
 
 ![](img/microservices-vs-monolith.svg)
 
 ---
 
-## Scaling
-
 ![](img/microservice-vs-monolith-scaling.svg)
+
 
 ---
 
-# Test 3
-
-## Test4
-
-![](img/pre/unititled.svg)
+# Inter-service Communication
 
 ---
 
