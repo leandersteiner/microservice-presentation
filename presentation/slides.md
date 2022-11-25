@@ -4,6 +4,7 @@ author: Leander Steiner
 date: 29.11.2022
 transition: fade
 theme: white
+width: 1200
 ---
 
 # Introduction
@@ -80,6 +81,26 @@ This usually includes:
 - Business transactions that span multiple services are not straight forward to implement
 - Implementing queries that join data that is now in multiple databases is challening
 - Complexity of managing multiple different databases (SQL, NoSQL, ...)
+
+## Problems
+
+- Every Service same database
+  - If database not available all serivces stop working
+  - Scaling of the DB will be hard
+- Service A directly accesses DB for Service B
+  - If DB of Service B is down Service A will stop working (dependency between Service A and Service B)
+  - If structure in Service B's database changes Service A will stop working
+  ```{.json .numberLines}
+  {
+    "name": "Leander",
+    "lastName": "Steiner"
+  }
+
+  {
+    "firstName": "Leander",
+    "lastName": "Steiner"
+  }
+  ```
 
 # Inter-service Communication
 
