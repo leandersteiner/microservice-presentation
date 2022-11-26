@@ -12,6 +12,7 @@ width: 1200
 ## Outline
 
 - What are Microservices
+- When to use microservices
 - Inter-service Communication
 - Modeling Microservices
 - Data Management
@@ -20,6 +21,8 @@ width: 1200
 ## Tools
 
 - Git
+- DDD
+- Ports and Adapters
 - Containerization (Docker, Podman)
 - Orchestration (Kubernetes)
 - Provisioning (Terraform, Ansible)
@@ -63,7 +66,7 @@ This usually includes:
 - Subscribing to Messages/Events
 - Publishing Messages/Events
 
-## Pros
+### Pros
 
 - Fast compilation and build time
 - Fast deployments and lower deployment size
@@ -79,7 +82,7 @@ This usually includes:
 - Cost optimization
 - Ease of refactoring
 
-## Cons
+### Cons
 
 - Higher resource overhead
 - Harder to debug
@@ -286,12 +289,188 @@ message Metadata {
 - Data duplication
 - Harder to understand
 
-## Slide with sources 2
+# Minimal DDD and Architecture
 
-```{.java .numberLines}
-public record Thing(long id, String name) {
-    public String getNameAndId() {
-        return id + name;
-    }
+
+## Ingredients of effective modeling
+
+1. Binding the model and the implementation
+2. Cultivating a language based on the model
+3. Developing a knowledge-rich model
+4. Distilling the model
+5. Brainstorming and experimenting
+
+## Domains
+
+- an area of expertise
+- the area in which a software operates
+- what an organization does and the world it does it in
+- the knowledge space around the problems a software is designed to solve
+- software developers have expertise in the domain of software development
+- business problems cannot be solved with solution that exclusively belon to technological domains
+
+## Subdomains
+
+- distinguishable knowledge areas that are part of a larger compound
+- core domain
+  - area most relevant to the problems a software aims to solve
+- supporting subdomain
+  - combination of generic knowledge and problem-specific aspects
+- generic subdomain
+  - universal knowledge that is not specific to the main problem
+
+## Definition of terms
+
+- Domain
+  - Knowledge area around a problem
+- Domain Model
+  - Structured abstraction of Domain knowledge
+- Domain Model implementation
+  - Software solution based on a Domain Model
+
+## Bounded Contexts
+
+- explicit boundary in whithin which a Domain Model exists
+- intention to unify a model within certain boundaries
+
+## Software Architecture
+
+- **Domain**: Implementation of the Domain Model
+- **Infrastructure**: Technical functionality with optional external dependencies
+- **Application**: Use case execution, management of transaction and security
+- **UI**: Interaction with the software
+
+## Entities
+
+```go
+type Person struct {
+  ID   uuid.UUID
+  Name string
+  Age  int
+}
+
+type Item struct {
+  ID          uuid.UUID
+  Name        string
+  Description string
+}
+```
+
+```java
+public class Person {
+
+  private final PersonId personId;
+  private final EventLog changeLog;
+
+  private PersonName name;
+  private LocalDate birthDate;
+  private StreetAddress address;
+  private EmailAddress email;
+  private PhoneNumber phoneNumber;
+
+  public Person(PersonId personId, PersonName name) {
+    this.presonId = Objects.requireNonNull(personId);
+    this.changeLog = new EventLog();
+    changeName(name, "initial name");
+  }
+
+  public void changeName(PersonName name, String reason) {
+    Objects.requireNonNull(name);
+    this.name = name;
+    this.changeLog.register(new NameChangeEvent(name), reason);
+  }
+
+  public Stream<PersonName> getNameHistory() {
+    return this.changeLog.eventsOfType(NameChangeEvent.class).map(NameChangeEvent::getNewName);
+  }
+}
+```
+
+## Value Objects
+
+```go
+type Transaction struct {
+  amount    int
+  from      uuid.UUID
+  to        uuid.UUID
+  createdAt time.Time
+}
+```
+
+## Aggregates
+
+```go
+type Customer struct {
+  person       *entity.Person
+  products     []*entity.Item
+  transactions []valueobjects.Transactions
+}
+```
+
+## Factories
+
+```go
+func NewCustomer(name string) (Customer, error) {
+  if name == "" {
+    return Customer{}, ErrInvalidName
+  }
+
+  person := &entity.Person{
+    Name: name,
+    ID:   uuid.New(),
+  }
+
+  return Customer{
+    person:       person,
+    products:     make([]*entity.Item, 0),
+    transactions: make([]valueobjects.Transaction, 0)
+  }, nil
+}
+```
+
+## Services
+
+### Application
+
+### Domain
+
+### Infrastructure
+
+## Domain Events
+
+## Modules
+
+## Repositories
+
+```go
+type CustomerRepository interface {
+  Get(uuid.UUID) (aggregate.Customer, error)
+  Add(aggregate.Customer) error
+  Update(aggregate.Customer) error
+}
+```
+
+```go
+type MemoryRepository struct {
+  sync.RWMutex
+  customers map[uuid.UUID]aggregate.Customer
+}
+
+func New() *MemoryRepository {
+  return &MemoryRepository{
+    customers: make(map[uuid.UUID]aggregate.Customer),
+  }
+}
+
+func (mr *MemoryRepository) Get(uuid.UUID) (aggregate.Customer, error) {
+	return aggregate.Customer{}, nil
+}
+
+func (mr *MemoryRepository) Add(aggregate.Customer) error {
+	return nil
+}
+
+func (mr *MemoryRepository) Update(aggregate.Customer) error {
+	return nil
 }
 ```

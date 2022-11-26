@@ -1,3 +1,4 @@
 /presentation/img/pre
 /presentation/*.afdesign
 /presentation/slides.html
+node_modules
