@@ -1,0 +1,17 @@
+syntax = "proto3";
+option go_package="github.com/leandersteiner/microservice-presentation/examples/synchronous-communication/grpc/producer/user";
+package user;
+
+service UserService {
+  rpc GetUser(Empty) returns (User) {}
+}
+
+message User {
+  int32 id = 1;
+  string firstName = 2;
+  string lastName = 3;
+  string email = 4;
+}
+
+message Empty {
+}
