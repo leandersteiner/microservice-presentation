@@ -1,0 +1,10 @@
+POST http://localhost:8080/users
+Content-Type: application/json
+
+{
+  "id": 6,
+  "firstName": "Leander",
+  "lastName": "Steiner",
+  "email": "leander.steiner@hof-university.de"
+}
+

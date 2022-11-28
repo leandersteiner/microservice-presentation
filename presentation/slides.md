@@ -28,8 +28,8 @@ width: 1200
 - Provisioning (Terraform, Ansible)
 - CI/CD (Jenkins, CircleCI, Github Actions)
 - Databases (SQL, NoSQL)
-- Message/Event Broker (Kafka, NATS, RabbitMQ)
-- Monitoring & Tracing (Prometheus, Grafana, Zipkin)
+- Message Broker (Kafka, NATS, RabbitMQ)
+- Observability (Prometheus, Grafana, Zipkin)
 
 ## What are Microservices
 
@@ -55,6 +55,22 @@ width: 1200
 
 ---
 
+![](img/hexagonal-architecture.svg)
+
+---
+
+![](img/choreography.svg)
+
+---
+
+![](img/orchestration.svg)
+
+---
+
+![](img/saga-pattern.svg)
+
+---
+
 A microservice contains everything to make one feature of our application work.
 
 This usually includes:
@@ -66,7 +82,7 @@ This usually includes:
 - Subscribing to Messages/Events
 - Publishing Messages/Events
 
-### Pros
+## Benefits
 
 - Fast compilation and build time
 - Fast deployments and lower deployment size
@@ -82,7 +98,7 @@ This usually includes:
 - Cost optimization
 - Ease of refactoring
 
-### Cons
+## Drawbacks
 
 - Higher resource overhead
 - Harder to debug
@@ -100,6 +116,7 @@ This usually includes:
 
 ## Best practices
 
+- API-first design
 - Design for failure
 - Embrace automation
 - Invest in integration tests
@@ -112,13 +129,13 @@ This usually includes:
 - Each service gets its own database (if it needs one)
 - Services will never reach into another services database
 
-## Pros
+## Benefits
 
 - We want each service to run independently of other services (looseley coupled services)
 - Database schema/structure might change unexpectedly
 - Some services might function more efficiently with different types of DB's
 
-## Cons
+## Drawbacks
 
 - Business transactions that span multiple services are not straight forward to implement
 - Implementing queries that join data that is now in multiple databases is challening
@@ -145,6 +162,13 @@ This usually includes:
   ```
 
 # Inter-service Communication
+
+## Interaction Styles
+
+|              | one-to-one                                               | one-to-many                                    |
+| ------------ | -------------------------------------------------------- | ---------------------------------------------- |
+| Synchronous  | Request/response                                         | -                                              |
+| Asynchronous | Asynchronous request/response <br> One-way notifications | Publish/subscribe <br> Publish/async responses |
 
 ## Synchronous Communication
 
@@ -175,7 +199,7 @@ BenchmarkSerializeToProto-12 6596490  185 ns/op
 
 ## Popular Protocols
 
-## HTTP
+## HTTP / REST
 
 - URL parameters
 - Headers
@@ -186,6 +210,10 @@ BenchmarkSerializeToProto-12 6596490  185 ns/op
   - 3xx
   - 4xx
   - 5xx
+
+## Remote Procedure Calls (RPC)
+
+![](img/rpc.svg)
 
 ## Apache Thrift
 
@@ -219,7 +247,6 @@ service MetadataService {
 
 ```{.numberLines}
 syntax = "proto3";
-option go_package = "/gen";
 
 service MetadataService {
   rpc GetMetadata(GetMetadataRequest) returns (GetMetadataResponse);
@@ -242,12 +269,12 @@ message Metadata {
 }
 ```
 
-## Pros
+## Benefits
 
 - Easy to understand
 - No need for more databases
 
-## Cons
+## Drawbacks
 
 - Introduces a dependency between two services
 - If any inter-service request fails, the overall request fails
@@ -259,38 +286,116 @@ message Metadata {
 
 ## Asynchronous Communication
 
+## Messaging
+
+![](img/messaging.svg)
+
+## Messages
+
+- Document
+- Command
+- Event
+
+## Asynchronous Request Response
+
+![](img/async-request-response.svg)
+
+## One-way Notifications
+
+![](img/one-way-notifications.svg)
+
+## Publish/Subscribe
+
+![](img/publish-subscribe.svg)
+
+## API Specification
+
+- names of message channels
+- message types exchanged over each channel
+- message formats (JSON, XML, Protobuf)
+- asynchronous operations
+- published events
+
 ## Message Broker
 
-- Message delivery
-- Message transformation
-- Message aggregation
-- Message routing
-
-- Lossy
-- Lossless
+- ActiveMQ
+- RabbitMQ
+- Apache Kafka
+- Nats Jetstream
+- AWS Kinesis
+- AWS SQS
 
 ## Guarantees
 
 - At-least-once
-- Exactly-once
 - At-most-once
+- Exactly-once
 
-## Publish-Subscribe model
+- Send and forget
+- Store and forward
+
+## Models
+
+- Point-to-Point
+  - Message addressed to one recipient
+- Publish-Subscribe
+  - Message published into a topic
+
+```java
+MessageProducer messageProducer = ...;
+String channel = ...;
+String payload = ...;
+messageProducer.send(destination, MessageBuilder.withPayload(payload).build())
+```
+
+```java
+MessageConsumer messageConsumer;
+messageConsumer.subscribe(subscriberId, Collections.singleton(destination), message -> { ... })
+```
+
+```java
+DomainEventPublisher domainEventPublisher;
+
+String accountId = ...;
+
+DomainEvent domainEvent = new AccountDebited(...);
+
+domainEventPublisher.publish("Account", accountId, Collections.singletonList(domainEvent));
+```
+
+```java
+DomainEventHandlers domainEventHandlers = DomainEventHandlersBuilder
+    .forAggregateType("Order")
+    .onEvent(AccountDebited.class, domainEvent -> { ... })
+    .build();
+
+new DomainEventDispatcher("eventDispatcherId",domainEventHandlers,messageConsumer);
+```
 
 ## Apache Kafka
 
-## Pros
+## Message ordering
+
+
+
+## Benefits
 
 - No dependencies on other services
 - Service will be extremely fast
+- Overload protection/Message buffering
+- Reliability due to store and forward
+- Non-blocking
 
-## Cons
+## Drawbacks
 
 - Data duplication
 - Harder to understand
+- Sequential messages
+- Potential performance bottleneck
+- Potential single point of failure
+- Additional operational complexity
 
 # Minimal DDD and Architecture
-
 
 ## Ingredients of effective modeling
 
