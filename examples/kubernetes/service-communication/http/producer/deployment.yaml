@@ -1,0 +1,30 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: producer
+spec:
+  selector:
+    pod: producer-pod
+  ports:
+    - port: 8080
+      targetPort: 8080
+      protocol: TCP
+  type: LoadBalancer
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: producer
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      pod: producer-pod
+  template:
+    metadata:
+      labels:
+        pod: producer-pod
+    spec:
+      containers:
+        - name: producer-container
+          image: docker.io/leandersteiner/msc-producer-test:latest

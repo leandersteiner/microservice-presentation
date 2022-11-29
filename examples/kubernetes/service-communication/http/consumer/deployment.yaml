@@ -1,0 +1,30 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: consumer
+spec:
+  selector:
+    pod: consumer-pod
+  ports:
+    - port: 8081
+      targetPort: 8081
+      protocol: TCP
+  type: LoadBalancer
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: consumer
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      pod: consumer-pod
+  template:
+    metadata:
+      labels:
+        pod: consumer-pod
+    spec:
+      containers:
+        - name: consumer-container
+          image: docker.io/leandersteiner/msc-consumer-test:latest
