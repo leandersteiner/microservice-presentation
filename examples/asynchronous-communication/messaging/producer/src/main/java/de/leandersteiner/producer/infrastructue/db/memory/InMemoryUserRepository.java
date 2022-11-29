@@ -1,6 +1,6 @@
 package de.leandersteiner.producer.infrastructue.db.memory;
 
-import de.leandersteiner.producer.app.UserRepository;
+import de.leandersteiner.producer.domain.UserRepository;
 import de.leandersteiner.producer.domain.User;
 import java.util.Map;
 import java.util.Optional;

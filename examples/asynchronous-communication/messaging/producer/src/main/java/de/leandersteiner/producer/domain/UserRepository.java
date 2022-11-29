@@ -1,4 +1,4 @@
-package de.leandersteiner.producer.app;
+package de.leandersteiner.producer.domain;
 
 import de.leandersteiner.producer.domain.User;
 import java.util.Optional;

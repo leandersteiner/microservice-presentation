@@ -3,6 +3,7 @@ package de.leandersteiner.producer.app;
 import de.leandersteiner.producer.app.exceptions.UserAlreadyExistsException;
 import de.leandersteiner.producer.app.exceptions.UserNotFoundException;
 import de.leandersteiner.producer.domain.User;
+import de.leandersteiner.producer.domain.UserRepository;
 import de.leandersteiner.producer.infrastructue.messaging.MessageProducer;
 import de.leandersteiner.producer.infrastructue.messaging.nats.NatsMessageProducer;
 import java.io.IOException;
