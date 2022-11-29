@@ -7,16 +7,150 @@ theme: white
 width: 1200
 ---
 
+# Minimal DDD and Architecture
+
+## Ingredients of effective modeling
+
+1. Binding the model and the implementation
+2. Cultivating a language based on the model
+3. Developing a knowledge-rich model
+4. Distilling the model
+5. Brainstorming and experimenting
+
+## Domains
+
+- an area of expertise
+- the area in which a software operates
+- what an organization does and the world it does it in
+- the knowledge space around the problems a software is designed to solve
+- software developers have expertise in the domain of software development
+- business problems cannot be solved with solution that exclusively belon to technological domains
+
+## Subdomains
+
+- distinguishable knowledge areas that are part of a larger compound
+- core domain
+  - area most relevant to the problems a software aims to solve
+- supporting subdomain
+  - combination of generic knowledge and problem-specific aspects
+- generic subdomain
+  - universal knowledge that is not specific to the main problem
+
+## Definition of terms
+
+- Domain
+  - Knowledge area around a problem
+- Domain Model
+  - Structured abstraction of Domain knowledge
+- Domain Model implementation
+  - Software solution based on a Domain Model
+
+## Bounded Contexts
+
+- explicit boundary in whithin which a Domain Model exists
+- intention to unify a model within certain boundaries
+
+## Software Architecture
+
+- **Domain**: Implementation of the Domain Model
+- **Infrastructure**: Technical functionality with optional external dependencies
+- **Application**: Use case execution, management of transaction and security
+- **UI**: Interaction with the software
+
+---
+
+![](img/hexagonal-architecture.svg)
+
+
+## Entities
+
+```java
+public class Person {
+
+  private final PersonId personId;
+
+  private PersonName name;
+  private LocalDate birthDate;
+  private StreetAddress address;
+  private EmailAddress email;
+  private PhoneNumber phoneNumber;
+
+  ...
+}
+```
+
+## Value Objects
+
+```{.java. .numberLines}
+public class MonetaryAmount {
+  private final BigDecimal amount;
+  private final Currency currency;
+
+  ...
+}
+```
+
+## Aggregates
+
+```{.java .numberLines}
+public class CheckingAccount {
+  private Person accountHolder;
+  private Collection<Transaction> transactions;
+  private MonetaryAmount currentBalance;
+
+  ...
+}
+```
+
+## Repositories
+
+```{.java .numberLines}
+public interface UserRepository {
+    Iterable<User> findAll();
+    Optional<User> findById(int id);
+    boolean exists(int id);
+    User save(User user);
+    User delete(int id);
+}
+```
+
+---
+
+```{.java .numberLines}
+@Repository
+public class InMemoryUserRepository implements UserRepository {
+    private static final Map<Integer, User> users = new ConcurrentHashMap<>();
+
+    @Override
+    public Iterable<User> findAll() {
+        return users.values();
+    }
+
+    @Override
+    public Optional<User> findById(int id) {
+        return exists(id) ? Optional.of(users.get(id)) : Optional.empty();
+    }
+
+    @Override
+    public boolean exists(int id) {
+        return users.get(id) != null;
+    }
+
+    @Override
+    public User save(User user) {
+        users.put(user.id(), user);
+        return user;
+    }
+
+    @Override
+    public User delete(int id) {
+        return users.remove(id);
+    }
+}
+
+```
+
 # Introduction
-
-## Outline
-
-- What are Microservices
-- When to use microservices
-- Inter-service Communication
-- Modeling Microservices
-- Data Management
-- Service Communication
 
 ## Tools
 
@@ -33,41 +167,11 @@ width: 1200
 
 ## What are Microservices
 
-
-![](img/microservice-example.svg)
-
----
-
-
-![](img/microservices-vs-monolith.svg)
-
----
-
-![](img/microservice-vs-monolith-scaling.svg)
-
----
-
 ![](img/monolith-example.svg)
 
 ---
 
 ![](img/monolith-example-as-microservice.svg)
-
----
-
-![](img/hexagonal-architecture.svg)
-
----
-
-![](img/choreography.svg)
-
----
-
-![](img/orchestration.svg)
-
----
-
-![](img/saga-pattern.svg)
 
 ---
 
@@ -81,6 +185,19 @@ This usually includes:
 - Database Access
 - Subscribing to Messages/Events
 - Publishing Messages/Events
+
+---
+
+![](img/microservice-example.svg)
+
+---
+
+
+![](img/microservices-vs-monolith.svg)
+
+---
+
+![](img/microservice-vs-monolith-scaling.svg)
 
 ## Benefits
 
@@ -128,6 +245,7 @@ This usually includes:
 
 - Each service gets its own database (if it needs one)
 - Services will never reach into another services database
+- Number of database clusters should not explode
 
 ## Benefits
 
@@ -149,17 +267,87 @@ This usually includes:
 - Service A directly accesses DB for Service B
   - If DB of Service B is down Service A will stop working (dependency between Service A and Service B)
   - If structure in Service B's database changes Service A will stop working
-  ```{.json .numberLines}
-  {
-    "name": "Leander",
-    "lastName": "Steiner"
-  }
 
-  {
-    "firstName": "Leander",
-    "lastName": "Steiner"
+## Event Sourcing
+
+- in relational databases we store state
+- in even sourcing we store facts
+- facts are replayed for current state
+- get and save snapshots
+
+```{.json .numberLines}
+{
+  "id": "23d2076f-41bd-4cdb-875e-2b0812a27524",
+  "type": "VideoPublished",
+  "metadata": {
+    "traceId": "ddecf8e8-de5d-4989-9cf3-549c303ac939",
+    "userId": "bb6a04b0-cb74-4981-b73d-24b844ca334f"
+  },
+  "data": {
+    "ownerId": "bb6a04b0-cb74-4981-b73d-24b844ca334f",
+    "sourceUri": "https://sourceurl.com/",
+    "videoId": "9bfb5f98-36f4-44a2-8251-ab06e0d6d919"
   }
-  ```
+}
+```
+
+## Projections
+
+```{.js .numberLines}
+function priceUp(state, event) {
+  state.increasePrice(event.amount);
+}
+
+function priceDown(state, event) {
+  state.decreasePrice(event.amount);
+}
+```
+
+## Event Store
+
+- store new events
+- notify event subscribers
+- get N events after event X
+
+```{.js .numberLines}
+save(x)
+getEventsAfter(x, eventTypes)
+```
+
+[Message DB](https://github.com/message-db/message-db)
+
+---
+
+```sql
+CREATE TABLE IF NOT EXISTS message_store.messages (
+  id UUID NOT NULL DEFAULT gen_random_uuid(),
+  stream_name text NOT NULL,
+  type text NOT NULL,
+  position bigint NOT NULL,
+  global_position bigserial NOT NULL,
+  data jsonb,
+  metadata jsonb,
+  time TIMESTAMP WITHOUT TIME ZONE DEFAULT (now() AT TIME ZONE 'utc') NOT NULL
+);
+
+ALTER TABLE
+  message_store.messages
+ADD PRIMARY KEY (global_position) NOT DEFERRABLE INITIALLY IMMEDIATE;
+```
+
+[Eventide-Project](https://eventide-project.org/)
+
+## Command Query Responsibility Segregation (CQRS)
+
+## Data Aggregation
+
+---
+
+![](img/choreography.svg)
+
+---
+
+![](img/orchestration.svg)
 
 # Inter-service Communication
 
@@ -296,6 +484,47 @@ message Metadata {
 - Command
 - Event
 
+---
+
+```{.json .numberLines}
+{
+  "id": "928a73ca-2925-42c9-974a-467cd96e0a44",
+  "type": "Register",
+  "data": {
+    "userId": "46aa6e66-adf9-40d0-bfe0-ae8ed5b70892",
+    "email": "user@example.com",
+    "passwordHash":"$2b$10$IrxFcWAxwRQGcNbK5Zr03.aLvgFGSUSdeUGw86ONXoz3Nm.PUlycS"
+  }
+}
+```
+
+---
+
+```{.json .numberLines}
+{
+  "id": "10e23852-2725-4789-a4d2-4e0630b3a55d",
+  "type": "Registered",
+  "data": {
+    "userId": "46aa6e66-adf9-40d0-bfe0-ae8ed5b70892",
+    "email": "user@example.com",
+    "passwordHash": "$2b$10$IrxFcWAxwRQGcNbK5Zr03.aLvgFGSUSdeUGw86ONXoz3Nm.PUlycS"
+  }
+}
+```
+
+```{.json .numberLines}
+{
+  "id": "ea0835d6-a073-4a25-aca9-db75c4c153f4",
+  "type": "RegistrationRejected",
+  "data": {
+    "userId": "46aa6e66-adf9-40d0-bfe0-ae8ed5b70892",
+    "email": "not an email",
+    "passwordHash": "$2b$10$IrxFcWAxwRQGcNbK5Zr03.aLvgFGSUSdeUGw86ONXoz3Nm.PUlycS",
+    "reason": "email was not valid"
+  }
+}
+```
+
 ## Asynchronous Request Response
 
 ![](img/async-request-response.svg)
@@ -307,6 +536,7 @@ message Metadata {
 ## Publish/Subscribe
 
 ![](img/publish-subscribe.svg)
+
 
 ## API Specification
 
@@ -372,12 +602,6 @@ DomainEventHandlers domainEventHandlers = DomainEventHandlersBuilder
 new DomainEventDispatcher("eventDispatcherId",domainEventHandlers,messageConsumer);
 ```
 
-## Apache Kafka
-
-## Message ordering
-
-
-
 ## Benefits
 
 - No dependencies on other services
@@ -395,189 +619,64 @@ new DomainEventDispatcher("eventDispatcherId",domainEventHandlers,messageConsume
 - Potential single point of failure
 - Additional operational complexity
 
-# Minimal DDD and Architecture
+## Sagas
 
-## Ingredients of effective modeling
+![](img/saga-pattern.svg)
 
-1. Binding the model and the implementation
-2. Cultivating a language based on the model
-3. Developing a knowledge-rich model
-4. Distilling the model
-5. Brainstorming and experimenting
-
-## Domains
-
-- an area of expertise
-- the area in which a software operates
-- what an organization does and the world it does it in
-- the knowledge space around the problems a software is designed to solve
-- software developers have expertise in the domain of software development
-- business problems cannot be solved with solution that exclusively belon to technological domains
-
-## Subdomains
-
-- distinguishable knowledge areas that are part of a larger compound
-- core domain
-  - area most relevant to the problems a software aims to solve
-- supporting subdomain
-  - combination of generic knowledge and problem-specific aspects
-- generic subdomain
-  - universal knowledge that is not specific to the main problem
-
-## Definition of terms
-
-- Domain
-  - Knowledge area around a problem
-- Domain Model
-  - Structured abstraction of Domain knowledge
-- Domain Model implementation
-  - Software solution based on a Domain Model
-
-## Bounded Contexts
-
-- explicit boundary in whithin which a Domain Model exists
-- intention to unify a model within certain boundaries
-
-## Software Architecture
-
-- **Domain**: Implementation of the Domain Model
-- **Infrastructure**: Technical functionality with optional external dependencies
-- **Application**: Use case execution, management of transaction and security
-- **UI**: Interaction with the software
-
-## Entities
-
-```go
-type Person struct {
-  ID   uuid.UUID
-  Name string
-  Age  int
-}
-
-type Item struct {
-  ID          uuid.UUID
-  Name        string
-  Description string
-}
-```
-
-```java
-public class Person {
-
-  private final PersonId personId;
-  private final EventLog changeLog;
-
-  private PersonName name;
-  private LocalDate birthDate;
-  private StreetAddress address;
-  private EmailAddress email;
-  private PhoneNumber phoneNumber;
-
-  public Person(PersonId personId, PersonName name) {
-    this.presonId = Objects.requireNonNull(personId);
-    this.changeLog = new EventLog();
-    changeName(name, "initial name");
-  }
-
-  public void changeName(PersonName name, String reason) {
-    Objects.requireNonNull(name);
-    this.name = name;
-    this.changeLog.register(new NameChangeEvent(name), reason);
-  }
-
-  public Stream<PersonName> getNameHistory() {
-    return this.changeLog.eventsOfType(NameChangeEvent.class).map(NameChangeEvent::getNewName);
-  }
-}
-```
-
-## Value Objects
-
-```go
-type Transaction struct {
-  amount    int
-  from      uuid.UUID
-  to        uuid.UUID
-  createdAt time.Time
-}
-```
-
-## Aggregates
-
-```go
-type Customer struct {
-  person       *entity.Person
-  products     []*entity.Item
-  transactions []valueobjects.Transactions
-}
-```
-
-## Factories
-
-```go
-func NewCustomer(name string) (Customer, error) {
-  if name == "" {
-    return Customer{}, ErrInvalidName
-  }
-
-  person := &entity.Person{
-    Name: name,
-    ID:   uuid.New(),
-  }
-
-  return Customer{
-    person:       person,
-    products:     make([]*entity.Item, 0),
-    transactions: make([]valueobjects.Transaction, 0)
-  }, nil
-}
-```
-
-## Services
-
-### Application
-
-### Domain
-
-### Infrastructure
-
-## Domain Events
-
-## Modules
-
-## Repositories
-
-```go
-type CustomerRepository interface {
-  Get(uuid.UUID) (aggregate.Customer, error)
-  Add(aggregate.Customer) error
-  Update(aggregate.Customer) error
-}
-```
-
-```go
-type MemoryRepository struct {
-  sync.RWMutex
-  customers map[uuid.UUID]aggregate.Customer
-}
-
-func New() *MemoryRepository {
-  return &MemoryRepository{
-    customers: make(map[uuid.UUID]aggregate.Customer),
-  }
-}
-
-func (mr *MemoryRepository) Get(uuid.UUID) (aggregate.Customer, error) {
-	return aggregate.Customer{}, nil
-}
-
-func (mr *MemoryRepository) Add(aggregate.Customer) error {
-	return nil
-}
-
-func (mr *MemoryRepository) Update(aggregate.Customer) error {
-	return nil
-}
-```
 
 # Containers & Orchestration
+
+## Kubernetes
+
+![](img/kubernetes.svg)
+
+---
+
+![](img/deployment.svg)
+
+---
+
+![](img/replicas.svg)
+
+---
+
+![](img/kubernetes-services.svg)
+
+# Stability Patterns
+
+## Circuit Breaker
+
+---
+
+```{.go .numberLines}
+type Circuit func(context.Context) (string, error)
+
+func Breaker(circuite Circuit, failureThreshold uint) Circuit {
+  var consecutiveFailures int = 0
+  var lastAttempt = time.Now()
+  var m sync.RWMutex
+
+  return func(ctx context.Context) (string, error) {
+    m.RLock()
+    d := consecutiveFailure - int(failureThreshold)
+    if d >= 0 {
+      shouldRetryAt := lastAttempt.Add(time.Seconds * 2 << d)
+      if !time.Now().After(shouldRetryAt) {
+        m.RUnlock()
+        return "", errors.New("service unreachable")
+      }
+    }
+    m.RUnlock()
+    response, err := circuit(ctx)
+    m.Lock()
+    defer m.Unlock()
+    lastAttempt = time.Now()
+    if err != nil {
+      consecutiveFailures++
+      return respone, err
+    }
+    consecutiveFailures = 0
+    return response, nil
+  }
+}
+```
